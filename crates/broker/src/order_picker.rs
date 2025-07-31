@@ -685,65 +685,34 @@ where
         proof_res: &ProofResult,
         order_gas_cost: U256,
     ) -> Result<OrderPricingOutcome, OrderPickerErr> {
-        let config_min_mcycle_price = {
-            let config = self.config.lock_all().context("Failed to read config")?;
-            parse_ether(&config.market.mcycle_price).context("Failed to parse mcycle_price")?
-        };
+        // --- BEGIN AGGRESSIVE PRIMARY PROVER LOGIC ---
+        // Set your ETH price and minimum profit per order (in USD)
+        let eth_price_usd = 3800.0; // Updated ETH price
+        let min_profit_usd = 0.06; // Your minimum acceptable reward
+        let min_price_eth = min_profit_usd / eth_price_usd; // ≈ 0.0000158 ETH
 
-        let order_id = order.id();
-        let one_mill = U256::from(1_000_000);
+        // Convert to wei
+        let min_price_wei = parse_ether(min_price_eth.to_string()).unwrap();
 
-        let mcycle_price_min = U256::from(order.request.offer.minPrice)
-            .saturating_sub(order_gas_cost)
-            .saturating_mul(one_mill)
-            / U256::from(proof_res.stats.total_cycles);
-        let mcycle_price_max = U256::from(order.request.offer.maxPrice)
-            .saturating_sub(order_gas_cost)
-            .saturating_mul(one_mill)
-            / U256::from(proof_res.stats.total_cycles);
+        // Get the order's minPrice (in wei)
+        let order_min_price_wei = U256::from(order.request.offer.minPrice);
 
-        tracing::debug!(
-            "Order {order_id} price: {}-{} ETH, {}-{} ETH per mcycle, {} stake required, {} ETH gas cost",
-            format_ether(U256::from(order.request.offer.minPrice)),
-            format_ether(U256::from(order.request.offer.maxPrice)),
-            format_ether(mcycle_price_min),
-            format_ether(mcycle_price_max),
-            format_units(U256::from(order.request.offer.lockStake), self.stake_token_decimals).unwrap_or_default(),
-            format_ether(order_gas_cost),
-        );
+        // Check if you have enough stake (existing logic, or add your own check here)
+        // For now, assume you do (the monitor will enforce it at lock time)
 
-        // Skip the order if it will never be worth it
-        if mcycle_price_max < config_min_mcycle_price {
-            tracing::debug!("Removing under priced order {order_id}");
+        if order_min_price_wei >= min_price_wei {
+            // Lock ASAP
+            let expiry_secs = order.request.offer.biddingStart + order.request.offer.lockTimeout as u64;
+            return Ok(Lock {
+                total_cycles: proof_res.stats.total_cycles,
+                target_timestamp_secs: 0, // lock immediately
+                expiry_secs,
+            });
+        } else {
+            // Skip if not profitable
             return Ok(Skip);
         }
-
-        let target_timestamp_secs = if mcycle_price_min >= config_min_mcycle_price {
-            tracing::info!(
-                "Selecting order {order_id} at price {} - ASAP",
-                format_ether(U256::from(order.request.offer.minPrice))
-            );
-            0 // Schedule the lock ASAP
-        } else {
-            let target_min_price = config_min_mcycle_price
-                .saturating_mul(U256::from(proof_res.stats.total_cycles))
-                .div_ceil(ONE_MILLION)
-                + order_gas_cost;
-            tracing::debug!(
-                "Order {order_id} minimum profitable price: {} ETH",
-                format_ether(target_min_price)
-            );
-
-            order
-                .request
-                .offer
-                .time_at_price(target_min_price)
-                .context("Failed to get target price timestamp")?
-        };
-
-        let expiry_secs = order.request.offer.biddingStart + order.request.offer.lockTimeout as u64;
-
-        Ok(Lock { total_cycles: proof_res.stats.total_cycles, target_timestamp_secs, expiry_secs })
+        // --- END AGGRESSIVE PRIMARY PROVER LOGIC ---
     }
 
     /// Evaluate if a lock expired order is worth picking based on how much of the slashed stake token we can recover

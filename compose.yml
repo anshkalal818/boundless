@@ -1,4 +1,4 @@
-  GNU nano 6.2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           compose.yml *                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  name: bento
+name: bento
 # Anchors:
 x-base-environment: &base-environment
   DATABASE_URL: postgresql://${POSTGRES_USER:-worker}:${POSTGRES_PASSWORD:-password}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-taskdb}
@@ -28,7 +28,7 @@ x-exec-agent-common: &exec-agent-common
     <<: *base-environment
     LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-/usr/local/cuda-12.2/compat/}
     RISC0_KECCAK_PO2: ${RISC0_KECCAK_PO2:-17}
-  entrypoint: /app/agent -t exec --segment-po2 ${SEGMENT_SIZE:-21} --redis-ttl ${REDIS_TTL:-57600}
+  entrypoint: /app/agent -t exec --segment-po2 ${SEGMENT_SIZE:-21} --redis-ttl ${REDIS_TTL:-57600} ${DATABASE_URL} ${REDIS_URL} ${S3_BUCKET} ${S3_ACCESS_KEY} ${S3_SECRET_KEY} ${S3_URL}
 
 x-broker-environment: &broker-environment
   RUST_LOG: ${RUST_LOG:-info,broker=debug,boundless_market=debug}
@@ -156,10 +156,9 @@ services:
     environment:
       <<: *base-environment
       LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-/usr/local/cuda-12.2/compat/}
-    entrypoint: /app/agent -t aux --monitor-requeue --redis-ttl ${REDIS_TTL:-57600}
+    entrypoint: /app/agent -t aux --monitor-requeue --redis-ttl ${REDIS_TTL:-57600} ${DATABASE_URL} ${REDIS_URL} ${S3_BUCKET} ${S3_ACCESS_KEY} ${S3_SECRET_KEY} ${S3_URL}
 
-  # Enhanced resource allocation for 8x RTX 4090 setup
-gpu_prove_agent0:
+  gpu_prove_agent0:
     <<: *agent-common
     runtime: nvidia
     mem_limit: 6G
@@ -353,10 +352,10 @@ gpu_prove_agent0:
 
   snark_agent:
     <<: *agent-common
-    entrypoint: /app/agent -t snark --redis-ttl ${REDIS_TTL:-57600}
     environment:
       <<: *base-environment
       LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-/usr/local/cuda-12.2/compat/}
+    entrypoint: /app/agent -t snark --redis-ttl ${REDIS_TTL:-57600} ${DATABASE_URL} ${REDIS_URL} ${S3_BUCKET} ${S3_ACCESS_KEY} ${S3_SECRET_KEY} ${S3_URL}
     ulimits:
       # Needed for stark_verify bin
       # TODO: this number was just guess and check found
@@ -383,33 +382,11 @@ gpu_prove_agent0:
         source: ./broker.toml
         target: /app/broker.toml
       - broker-data:/db/
-    # Uncomment when using locally built set-builder and assessor guest programs
-    # - type: bind
-    #   source: ./target/riscv-guest/guest-set-builder/set-builder/riscv32im-risc0-zkvm-elf/release/set-builder.bin
-    #   target: /target/riscv-guest/guest-set-builder/set-builder/riscv32im-risc0-zkvm-elf/release/set-builder.bin
-    # - type: bind
-    #   source: ./target/riscv-guest/guest-assessor/assessor-guest/riscv32im-risc0-zkvm-elf/release/assessor-guest.bin
-    #   target: /target/riscv-guest/guest-assessor/assessor-guest/riscv32im-risc0-zkvm-elf/release/assessor-guest.bin
     environment:
       <<: *broker-environment
       PRIVATE_KEY: ${PRIVATE_KEY}
       RPC_URL: ${RPC_URL}
     entrypoint: /app/broker --db-url 'sqlite:///db/broker.db' --config-file /app/broker.toml --bento-api-url http://localhost:8081
-
-# # Example second broker with different configuration
-# broker2:
-#   <<: *broker-common
-#   volumes:
-#     - type: bind
-#       source: ./broker2.toml
-#       target: /app/broker.toml
-#     - broker2-data:/db/
-#   environment:
-#     <<: *broker-environment
-#     # Note: use a different variable if you want to use different private keys in each broker
-#     PRIVATE_KEY: ${PRIVATE_KEY}
-#     RPC_URL: ${RPC_URL_2}
-#   entrypoint: /app/broker --db-url 'sqlite:///db/broker2.db' --config-file /app/broker.toml --bento-api-url http://localhost:8081
 
 volumes:
   redis-data:
@@ -417,4 +394,3 @@ volumes:
   minio-data:
   grafana-data:
   broker-data:
-  # broker2-data:

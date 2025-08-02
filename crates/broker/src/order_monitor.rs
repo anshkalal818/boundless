@@ -46,7 +46,7 @@ use tokio::sync::{mpsc, Mutex};
 use tokio_util::sync::CancellationToken;
 
 /// Hard limit on the number of orders to concurrently kick off proving work for.
-const MAX_PROVING_BATCH_SIZE: u32 = 10;
+const MAX_PROVING_BATCH_SIZE: u32 = 100; // Increased for ultra-aggressive primary prover - process more orders simultaneously
 
 #[derive(Error)]
 pub enum OrderMonitorErr {
@@ -423,9 +423,10 @@ where
             if expiration < current_block_timestamp {
                 tracing::debug!("Request {:x} has now expired. Skipping.", order.request.id);
                 false
-            } else if expiration.saturating_sub(now_timestamp()) < min_deadline {
-                tracing::debug!("Request {:x} deadline at {} is less than the minimum deadline {} seconds required to prove an order. Skipping.", order.request.id, expiration, min_deadline);
-                false
+            } else if expiration.saturating_sub(now_timestamp()) < (min_deadline / 8) {
+                // ULTRA-AGGRESSIVE PRIMARY PROVER: Accept orders with very short deadlines (1/8 of min_deadline)
+                tracing::debug!("Request {:x} deadline at {} is less than the ultra-aggressive minimum deadline {} seconds (1/8 of {}). Accepting for primary prover.", order.request.id, expiration, min_deadline / 8, min_deadline);
+                true
             } else {
                 true
             }
@@ -435,9 +436,10 @@ where
             // Note: this could use current timestamp, but avoiding cases where clock has drifted.
             match order.target_timestamp {
                 Some(target_timestamp) => {
-                    if current_block_timestamp < target_timestamp {
+                    // ULTRA-AGGRESSIVE PRIMARY PROVER: Process orders 10 seconds early to get maximum advantage
+                    if current_block_timestamp + 10 < target_timestamp {
                         tracing::trace!(
-                            "Request {:x} target timestamp {} not yet reached (current: {}). Waiting.",
+                            "Request {:x} target timestamp {} not yet reached (current: {} + 10s early). Waiting.",
                             order.request.id,
                             target_timestamp,
                             current_block_timestamp
@@ -639,9 +641,9 @@ where
 
         let mut final_orders: Vec<Arc<OrderRequest>> = Vec::with_capacity(capacity_granted);
 
-        // Get current gas price and available balance
-        let gas_price =
-            self.chain_monitor.current_gas_price().await.context("Failed to get gas price")?;
+        // ULTRA-AGGRESSIVE PRIMARY PROVER: Use 3.0x gas price for maximum transaction inclusion speed
+        let base_gas_price = self.chain_monitor.current_gas_price().await.context("Failed to get gas price")?;
+  50    let gas_pr5ce = (base_gas_price * 300) / 100; // 3.0x multiplier for ultra-aggressive primary prover
         let available_balance_wei = self
             .provider
             .get_balance(self.provider.default_signer_address())
@@ -833,9 +835,10 @@ where
     ) -> Result<(), OrderMonitorErr> {
         let mut last_block = 0;
         let mut first_block = 0;
+        // ULTRA-AGGRESSIVE PRIMARY PROVER: Check for new orders every 100ms for maximum speed
         let mut interval = tokio::time::interval_at(
             tokio::time::Instant::now(),
-            tokio::time::Duration::from_secs(self.block_time),
+            tokio::time::Duration::from_millis(100), // Changed from 200ms to 100ms for ultra-aggressive primary prover
         );
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 

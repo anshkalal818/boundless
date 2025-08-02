@@ -696,11 +696,30 @@ where
 
         // Get the order's minPrice (in wei)
         let order_min_price_wei = U256::from(order.request.offer.minPrice);
+        let order_id = order.id();
+
+        // Estimate cost in ETH (assume 1 minute per proof, $3.225/hr)
+        let cost_per_sec_usd = 3.225 / 3600.0;
+        let est_proof_time_sec = 60.0; // You can make this dynamic if you want
+        let est_cost_usd = cost_per_sec_usd * est_proof_time_sec;
+        let est_cost_eth = est_cost_usd / eth_price_usd;
+        let order_min_price_eth_f64 = order_min_price_wei.as_u128() as f64 / 1e18;
+        let est_profit_eth = order_min_price_eth_f64 - est_cost_eth;
+        let est_profit_usd = est_profit_eth * eth_price_usd;
 
         // Check if you have enough stake (existing logic, or add your own check here)
         // For now, assume you do (the monitor will enforce it at lock time)
 
         if order_min_price_wei >= min_price_wei {
+            tracing::info!(
+                "[PRIMARY LOCK] Order {}: minPrice = {:.8} ETH, est_cost = {:.8} ETH (${:.4}), est_profit = {:.8} ETH (${:.4})",
+                order_id,
+                order_min_price_eth_f64,
+                est_cost_eth,
+                est_cost_usd,
+                est_profit_eth,
+                est_profit_usd
+            );
             // Lock ASAP
             let expiry_secs = order.request.offer.biddingStart + order.request.offer.lockTimeout as u64;
             return Ok(Lock {

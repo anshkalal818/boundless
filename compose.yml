@@ -159,119 +159,190 @@ services:
 
     entrypoint: /app/agent -t aux --monitor-requeue --redis-ttl ${REDIS_TTL:-57600}
 
-  gpu_prove_agent0:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 4G
-    cpus: 4
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
+# Enhanced resource allocation for 8x RTX 4090 setup
+gpu_prove_agent0:
+  <<: *agent-common
+  runtime: nvidia
+  mem_limit: 8G  # Increased from 4G for better performance
+  cpus: 8        # Increased from 4 for better CPU allocation
+  ulimits:
+    nofile:
+      soft: 65536
+      hard: 65536
+  environment:
+    - RUST_LOG=info
+    - RUST_BACKTRACE=1
+    - CUDA_VISIBLE_DEVICES=0
+  entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            device_ids: ['0']
+            capabilities: [gpu]
+        cpus: '0-7'  # Pin to specific CPU cores
 
-    # comment-out if running in CPU proving mode
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['0']
-              capabilities: [gpu]
+gpu_prove_agent1:
+  <<: *agent-common
+  runtime: nvidia
+  mem_limit: 8G
+  cpus: 8
+  ulimits:
+    nofile:
+      soft: 65536
+      hard: 65536
+  environment:
+    - RUST_LOG=info
+    - RUST_BACKTRACE=1
+    - CUDA_VISIBLE_DEVICES=1
+  entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            device_ids: ['1']
+            capabilities: [gpu]
+        cpus: '8-15'
 
-  gpu_prove_agent1:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 4G
-    cpus: 4
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['1']
-              capabilities: [gpu]
+gpu_prove_agent2:
+  <<: *agent-common
+  runtime: nvidia
+  mem_limit: 8G
+  cpus: 8
+  ulimits:
+    nofile:
+      soft: 65536
+      hard: 65536
+  environment:
+    - RUST_LOG=info
+    - RUST_BACKTRACE=1
+    - CUDA_VISIBLE_DEVICES=2
+  entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            device_ids: ['2']
+            capabilities: [gpu]
+        cpus: '16-23'
 
-  gpu_prove_agent2:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 4G
-    cpus: 4
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['2']
-              capabilities: [gpu]
+gpu_prove_agent3:
+  <<: *agent-common
+  runtime: nvidia
+  mem_limit: 8G
+  cpus: 8
+  ulimits:
+    nofile:
+      soft: 65536
+      hard: 65536
+  environment:
+    - RUST_LOG=info
+    - RUST_BACKTRACE=1
+    - CUDA_VISIBLE_DEVICES=3
+  entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            device_ids: ['3']
+            capabilities: [gpu]
+        cpus: '24-31'
 
-  gpu_prove_agent3:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 4G
-    cpus: 4
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['3']
-              capabilities: [gpu]
+gpu_prove_agent4:
+  <<: *agent-common
+  runtime: nvidia
+  mem_limit: 8G
+  cpus: 8
+  ulimits:
+    nofile:
+      soft: 65536
+      hard: 65536
+  environment:
+    - RUST_LOG=info
+    - RUST_BACKTRACE=1
+    - CUDA_VISIBLE_DEVICES=4
+  entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            device_ids: ['4']
+            capabilities: [gpu]
+        cpus: '32-39'
 
-  gpu_prove_agent4:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 4G
-    cpus: 4
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['4']
-              capabilities: [gpu]
+gpu_prove_agent5:
+  <<: *agent-common
+  runtime: nvidia
+  mem_limit: 8G
+  cpus: 8
+  ulimits:
+    nofile:
+      soft: 65536
+      hard: 65536
+  environment:
+    - RUST_LOG=info
+    - RUST_BACKTRACE=1
+    - CUDA_VISIBLE_DEVICES=5
+  entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            device_ids: ['5']
+            capabilities: [gpu]
+        cpus: '40-47'
 
-  gpu_prove_agent5:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 4G
-    cpus: 4
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['5']
-              capabilities: [gpu]
+gpu_prove_agent6:
+  <<: *agent-common
+  runtime: nvidia
+  mem_limit: 8G
+  cpus: 8
+  ulimits:
+    nofile:
+      soft: 65536
+      hard: 65536
+  environment:
+    - RUST_LOG=info
+    - RUST_BACKTRACE=1
+    - CUDA_VISIBLE_DEVICES=6
+  entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            device_ids: ['6']
+            capabilities: [gpu]
+        cpus: '48-55'
 
-  gpu_prove_agent6:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 4G
-    cpus: 4
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['6']
-              capabilities: [gpu]
-
-  gpu_prove_agent7:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 4G
-    cpus: 4
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['7']
-              capabilities: [gpu]
+gpu_prove_agent7:
+  <<: *agent-common
+  runtime: nvidia
+  mem_limit: 8G
+  cpus: 8
+  ulimits:
+    nofile:
+      soft: 65536
+      hard: 65536
+  environment:
+    - RUST_LOG=info
+    - RUST_BACKTRACE=1
+    - CUDA_VISIBLE_DEVICES=7
+  entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            device_ids: ['7']
+            capabilities: [gpu]
+        cpus: '56-63'
 
   snark_agent:
     <<: *agent-common

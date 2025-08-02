@@ -1,0 +1,55 @@
+[market]
+# Aggressive pricing to capture primary orders
+mcycle_price = "0"
+mcycle_price_stake_token = "0.0000001"  # Even more aggressive pricing
+
+# Priority addresses (if you have any)
+priority_requestor_addresses = []
+
+# Optimized for 8x RTX 4090 performance
+peak_prove_khz = 5000
+
+# Aggressive settings for primary order capture
+max_mcycle_limit = 6000  # Increased for your 8x RTX 4090 setup
+max_journal_bytes = 10000
+min_deadline = 50  # Ultra-aggressive: accept orders with very short deadlines
+lookback_blocks = 50  # Reduced for faster processing
+max_stake = "8"  # Increased for your setup
+max_file_size = 70_000_000
+
+# Increased capacity for primary orders
+max_concurrent_proofs = 16  # Increased for 8x GPU setup
+max_concurrent_preflights = 32  # Increased for better throughput
+
+# Order pricing priority - process orders by shortest expiry first
+order_pricing_priority = "shortest_expiry"
+order_commitment_priority = "shortest_expiry"
+
+max_critical_task_retries = 10
+
+
+# Aggressive gas settings
+lockin_priority_gas = 800  # Ultra-aggressive gas price
+
+# Balance thresholds
+balance_warn_threshold = "0.1"
+balance_error_threshold = "0.05"
+stake_balance_warn_threshold = "1"
+stake_balance_error_threshold = "0.5"
+
+[prover]
+bonsai_r0_zkvm_ver = "2.1.0"
+status_poll_retry_count = 2  # Reduced for faster failure recovery
+status_poll_ms = 500  # Reduced polling interval
+req_retry_count = 1  # Ultra-aggressive: fail fast and move on
+req_retry_sleep_ms = 50  # Ultra-aggressive: minimal retry delay
+proof_retry_count = 1  # Ultra-aggressive: fail fast and move on
+proof_retry_sleep_ms = 50  # Ultra-aggressive: minimal retry delay
+
+[batcher]
+batch_max_time = 500
+min_batch_size = 1
+block_deadline_buffer_secs = 120
+txn_timeout = 45
+single_txn_fulfill = true
+withdraw = false 

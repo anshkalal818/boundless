@@ -55,3 +55,7 @@ sccache-v0.*
 
 # Ignore generated docs
 /docs
+
+
+
+!.env copy.broker-template

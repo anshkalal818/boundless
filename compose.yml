@@ -1,4 +1,4 @@
-name: bento
+  GNU nano 6.2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           compose.yml *                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  name: bento
 # Anchors:
 x-base-environment: &base-environment
   DATABASE_URL: postgresql://${POSTGRES_USER:-worker}:${POSTGRES_PASSWORD:-password}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-taskdb}
@@ -159,189 +159,197 @@ services:
     entrypoint: /app/agent -t aux --monitor-requeue --redis-ttl ${REDIS_TTL:-57600}
 
   # Enhanced resource allocation for 8x RTX 4090 setup
-  gpu_prove_agent0:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 6G  # Increased from 4G for better performance
-    cpus: 6        # Increased from 4 for better CPU allocation
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-    environment:
-      - RUST_LOG=info
-      - RUST_BACKTRACE=1
-      - CUDA_VISIBLE_DEVICES=0
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['0']
-              capabilities: [gpu]
-          cpus: '0-7'  # Pin to specific CPU cores
+  gpu_prove_agent0:
+    <<: *agent-common
+    runtime: nvidia
+    mem_limit: 6G
+    cpus: 6
+    cpuset: '0-7'
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    environment:
+      <<: *base-environment
+      RUST_LOG: info
+      RUST_BACKTRACE: 1
+      CUDA_VISIBLE_DEVICES: '0'
+    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600} ${DATABASE_URL} ${REDIS_URL} ${S3_BUCKET} ${S3_ACCESS_KEY} ${S3_SECRET_KEY} ${S3_URL}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
 
-  gpu_prove_agent1:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 6G
-    cpus: 6
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-    environment:
-      - RUST_LOG=info
-      - RUST_BACKTRACE=1
-      - CUDA_VISIBLE_DEVICES=1
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['1']
-              capabilities: [gpu]
-          cpus: '8-15'
+  gpu_prove_agent1:
+    <<: *agent-common
+    runtime: nvidia
+    mem_limit: 6G
+    cpus: 6
+    cpuset: '8-15'
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    environment:
+      <<: *base-environment
+      RUST_LOG: info
+      RUST_BACKTRACE: 1
+      CUDA_VISIBLE_DEVICES: '1'
+    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600} ${DATABASE_URL} ${REDIS_URL} ${S3_BUCKET} ${S3_ACCESS_KEY} ${S3_SECRET_KEY} ${S3_URL}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['1']
+              capabilities: [gpu]
 
-  gpu_prove_agent2:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 6G
-    cpus: 6
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-    environment:
-      - RUST_LOG=info
-      - RUST_BACKTRACE=1
-      - CUDA_VISIBLE_DEVICES=2
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['2']
-              capabilities: [gpu]
-          cpus: '16-23'
+  gpu_prove_agent2:
+    <<: *agent-common
+    runtime: nvidia
+    mem_limit: 6G
+    cpus: 6
+    cpuset: '16-23'
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    environment:
+      <<: *base-environment
+      RUST_LOG: info
+      RUST_BACKTRACE: 1
+      CUDA_VISIBLE_DEVICES: '2'
+    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600} ${DATABASE_URL} ${REDIS_URL} ${S3_BUCKET} ${S3_ACCESS_KEY} ${S3_SECRET_KEY} ${S3_URL}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['2']
+              capabilities: [gpu]
 
-  gpu_prove_agent3:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 6G
-    cpus: 6
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-    environment:
-      - RUST_LOG=info
-      - RUST_BACKTRACE=1
-      - CUDA_VISIBLE_DEVICES=3
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['3']
-              capabilities: [gpu]
-          cpus: '24-31'
+  gpu_prove_agent3:
+    <<: *agent-common
+    runtime: nvidia
+    mem_limit: 6G
+    cpus: 6
+    cpuset: '24-31'
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    environment:
+      <<: *base-environment
+      RUST_LOG: info
+      RUST_BACKTRACE: 1
+      CUDA_VISIBLE_DEVICES: '3'
+    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600} ${DATABASE_URL} ${REDIS_URL} ${S3_BUCKET} ${S3_ACCESS_KEY} ${S3_SECRET_KEY} ${S3_URL}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['3']
+              capabilities: [gpu]
 
-  gpu_prove_agent4:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 6G
-    cpus: 6
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-    environment:
-      - RUST_LOG=info
-      - RUST_BACKTRACE=1
-      - CUDA_VISIBLE_DEVICES=4
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['4']
-              capabilities: [gpu]
-          cpus: '32-39'
+  gpu_prove_agent4:
+    <<: *agent-common
+    runtime: nvidia
+    mem_limit: 6G
+    cpus: 6
+    cpuset: '32-39'
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    environment:
+      <<: *base-environment
+      RUST_LOG: info
+      RUST_BACKTRACE: 1
+      CUDA_VISIBLE_DEVICES: '4'
+    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600} ${DATABASE_URL} ${REDIS_URL} ${S3_BUCKET} ${S3_ACCESS_KEY} ${S3_SECRET_KEY} ${S3_URL}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['4']
+              capabilities: [gpu]
 
-  gpu_prove_agent5:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 6G
-    cpus: 6
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-    environment:
-      - RUST_LOG=info
-      - RUST_BACKTRACE=1
-      - CUDA_VISIBLE_DEVICES=5
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['5']
-              capabilities: [gpu]
-          cpus: '40-47'
+  gpu_prove_agent5:
+    <<: *agent-common
+    runtime: nvidia
+    mem_limit: 6G
+    cpus: 6
+    cpuset: '40-47'
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    environment:
+      <<: *base-environment
+      RUST_LOG: info
+      RUST_BACKTRACE: 1
+      CUDA_VISIBLE_DEVICES: '5'
+    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600} ${DATABASE_URL} ${REDIS_URL} ${S3_BUCKET} ${S3_ACCESS_KEY} ${S3_SECRET_KEY} ${S3_URL}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['5']
+              capabilities: [gpu]
 
-  gpu_prove_agent6:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 6G
-    cpus: 6
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-    environment:
-      - RUST_LOG=info
-      - RUST_BACKTRACE=1
-      - CUDA_VISIBLE_DEVICES=6
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['6']
-              capabilities: [gpu]
-          cpus: '48-55'
+  gpu_prove_agent6:
+    <<: *agent-common
+    runtime: nvidia
+    mem_limit: 6G
+    cpus: 6
+    cpuset: '48-55'
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    environment:
+      <<: *base-environment
+      RUST_LOG: info
+      RUST_BACKTRACE: 1
+      CUDA_VISIBLE_DEVICES: '6'
+    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600} ${DATABASE_URL} ${REDIS_URL} ${S3_BUCKET} ${S3_ACCESS_KEY} ${S3_SECRET_KEY} ${S3_URL}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['6']
+              capabilities: [gpu]
 
-  gpu_prove_agent7:
-    <<: *agent-common
-    runtime: nvidia
-    mem_limit: 6G
-    cpus: 6
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-    environment:
-      - RUST_LOG=info
-      - RUST_BACKTRACE=1
-      - CUDA_VISIBLE_DEVICES=7
-    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['7']
-              capabilities: [gpu]
-          cpus: '56-63'
+  gpu_prove_agent7:
+    <<: *agent-common
+    runtime: nvidia
+    mem_limit: 6G
+    cpus: 6
+    cpuset: '56-63'
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    environment:
+      <<: *base-environment
+      RUST_LOG: info
+      RUST_BACKTRACE: 1
+      CUDA_VISIBLE_DEVICES: '7'
+    entrypoint: /app/agent -t prove --redis-ttl ${REDIS_TTL:-57600} ${DATABASE_URL} ${REDIS_URL} ${S3_BUCKET} ${S3_ACCESS_KEY} ${S3_SECRET_KEY} ${S3_URL}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['7']
+              capabilities: [gpu]
 
   snark_agent:
     <<: *agent-common

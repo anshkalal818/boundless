@@ -692,7 +692,7 @@ where
         let min_price_eth = min_profit_usd / eth_price_usd; // ≈ 0.0000158 ETH
 
         // Convert to wei
-        let min_price_wei = parse_ether(min_price_eth.to_string()).unwrap();
+        let min_price_wei = parse_ether(&min_price_eth.to_string()).unwrap();
 
         // Get the order's minPrice (in wei)
         let order_min_price_wei = U256::from(order.request.offer.minPrice);

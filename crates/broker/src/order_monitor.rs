@@ -641,9 +641,9 @@ where
 
         let mut final_orders: Vec<Arc<OrderRequest>> = Vec::with_capacity(capacity_granted);
 
-        // ULTRA-AGGRESSIVE PRIMARY PROVER: Use 3.0x gas price for maximum transaction inclusion speed
+                // ULTRA-AGGRESSIVE PRIMARY PROVER: Use 3.0x gas price for maximum transaction inclusion speed
         let base_gas_price = self.chain_monitor.current_gas_price().await.context("Failed to get gas price")?;
-  50    let gas_pr5ce = (base_gas_price * 300) / 100; // 3.0x multiplier for ultra-aggressive primary prover
+        let gas_price = (base_gas_price * 300) / 100; // 3.0x multiplier for ultra-aggressive primary prover
         let available_balance_wei = self
             .provider
             .get_balance(self.provider.default_signer_address())

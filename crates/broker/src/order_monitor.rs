@@ -46,7 +46,7 @@ use tokio::sync::{mpsc, Mutex};
 use tokio_util::sync::CancellationToken;
 
 /// Hard limit on the number of orders to concurrently kick off proving work for.
-const MAX_PROVING_BATCH_SIZE: u32 = 100; // Increased for ultra-aggressive primary prover - process more orders simultaneously
+const MAX_PROVING_BATCH_SIZE: u32 = 16; // Increased for ultra-aggressive primary prover - process more orders simultaneously
 
 #[derive(Error)]
 pub enum OrderMonitorErr {

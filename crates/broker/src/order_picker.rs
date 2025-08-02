@@ -685,53 +685,60 @@ where
         proof_res: &ProofResult,
         order_gas_cost: U256,
     ) -> Result<OrderPricingOutcome, OrderPickerErr> {
-        // --- BEGIN AGGRESSIVE PRIMARY PROVER LOGIC ---
-        // Set your ETH price and minimum profit per order (in USD)
-        let eth_price_usd = 3800.0; // Updated ETH price
-        let min_profit_usd = 0.06; // Your minimum acceptable reward
-        let min_price_eth = min_profit_usd / eth_price_usd; // ≈ 0.0000158 ETH
+        // --- BEGIN CORRECTED BREAK-EVEN LOGIC ---
+// Configurable values (you should move these to broker.toml)
+let eth_price_usd = 3800.0;
+let machine_cost_per_hour_usd = 3.225;
 
-        // Convert to wei
-        let min_price_wei = parse_ether(&min_price_eth.to_string()).unwrap();
+// Calculate machine cost per second
+let machine_cost_per_sec_usd = machine_cost_per_hour_usd / 3600.0;
 
-        // Get the order's minPrice (in wei)
-        let order_min_price_wei = U256::from(order.request.offer.minPrice);
-        let order_id = order.id();
+// Accurately estimate proof time based on actual cycles from preflight
+// NOTE: You need to benchmark your machine to find your "cycles per second" value.
+// A good starting estimate for an 8x4090 rig is around 15,000,000,000 cycles/sec.
+let cycles_per_second = 15_000_000_000.0;
+let est_proof_time_sec = proof_res.stats.total_cycles as f64 / cycles_per_second;
 
-        // Estimate cost in ETH (assume 1 minute per proof, $3.225/hr)
-        let cost_per_sec_usd = 3.225 / 3600.0;
-        let est_proof_time_sec = 60.0; // You can make this dynamic if you want
-        let est_cost_usd = cost_per_sec_usd * est_proof_time_sec;
-        let est_cost_eth = est_cost_usd / eth_price_usd;
-        let order_min_price_eth_f64 = order_min_price_wei.as_u128() as f64 / 1e18;
-        let est_profit_eth = order_min_price_eth_f64 - est_cost_eth;
-        let est_profit_usd = est_profit_eth * eth_price_usd;
+// Calculate total estimated cost for this specific job
+let est_machine_cost_usd = machine_cost_per_sec_usd * est_proof_time_sec;
+let est_gas_cost_usd = (u128::try_from(order_gas_cost).unwrap() as f64 / 1e18) * eth_price_usd;
+let total_est_cost_usd = est_machine_cost_usd + est_gas_cost_usd;
 
-        // Check if you have enough stake (existing logic, or add your own check here)
-        // For now, assume you do (the monitor will enforce it at lock time)
+// Get the order's reward
+let order_reward_wei = U256::from(order.request.offer.minPrice);
+let order_reward_eth = u128::try_from(order_reward_wei).unwrap() as f64 / 1e18;
+let order_reward_usd = order_reward_eth * eth_price_usd;
+let order_id = order.id();
 
-        if order_min_price_wei >= min_price_wei {
-            tracing::info!(
-                "[PRIMARY LOCK] Order {}: minPrice = {:.8} ETH, est_cost = {:.8} ETH (${:.4}), est_profit = {:.8} ETH (${:.4})",
-                order_id,
-                order_min_price_eth_f64,
-                est_cost_eth,
-                est_cost_usd,
-                est_profit_eth,
-                est_profit_usd
-            );
-            // Lock ASAP
-            let expiry_secs = order.request.offer.biddingStart + order.request.offer.lockTimeout as u64;
-            return Ok(Lock {
-                total_cycles: proof_res.stats.total_cycles,
-                target_timestamp_secs: 0, // lock immediately
-                expiry_secs,
-            });
-        } else {
-            // Skip if not profitable
-            return Ok(Skip);
-        }
-        // --- END AGGRESSIVE PRIMARY PROVER LOGIC ---
+// THE CRITICAL CHECK: Reward must cover your costs
+if order_reward_usd >= total_est_cost_usd {
+    tracing::info!(
+        "[BREAK-EVEN LOCK] Accepting order {}: Reward=${:.4} >= Est.Cost=${:.4} (Machine=${:.4}, Gas=${:.4})",
+        order_id,
+        order_reward_usd,
+        total_est_cost_usd,
+        est_machine_cost_usd,
+        est_gas_cost_usd
+    );
+    
+    // Lock ASAP
+    let expiry_secs = order.request.offer.biddingStart + order.request.offer.lockTimeout as u64;
+    return Ok(Lock {
+        total_cycles: proof_res.stats.total_cycles,
+        target_timestamp_secs: 0, // lock immediately
+        expiry_secs,
+    });
+} else {
+    // Skip if it's a loss
+    tracing::info!(
+        "[SKIP] Skipping unprofitable order {}: Reward=${:.4} < Est.Cost=${:.4}",
+        order_id,
+        order_reward_usd,
+        total_est_cost_usd
+    );
+    return Ok(Skip);
+}
+// --- END CORRECTED BREAK-EVEN LOGIC ---
     }
 
     /// Evaluate if a lock expired order is worth picking based on how much of the slashed stake token we can recover

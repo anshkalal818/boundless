@@ -10,7 +10,7 @@ priority_requestor_addresses = []
 peak_prove_khz = 5000
 
 # Aggressive settings for primary order capture
-max_mcycle_limit = 6000  # Increased for your 8x RTX 4090 setup
+max_mcycle_limit = 2000  # Increased for your 8x RTX 4090 setup
 max_journal_bytes = 10000
 min_deadline = 50  # Ultra-aggressive: accept orders with very short deadlines
 lookback_blocks = 50  # Reduced for faster processing
